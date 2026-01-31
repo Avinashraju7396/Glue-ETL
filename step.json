@@ -1,0 +1,46 @@
+{
+  "Comment": "On-demand S3 to S3 then S3 to RDS Glue pipeline with failure notification",
+  "StartAt": "S3_to_S3_Glue",
+  "States": {
+    "S3_to_S3_Glue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "s3-s3"
+      },
+      "Next": "Check_S3_to_S3_Result"
+    },
+
+    "Check_S3_to_S3_Result": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.JobRunState",
+          "StringEquals": "SUCCEEDED",
+          "Next": "S3_to_RDS_Glue"
+        }
+      ],
+      "Default": "Send_Failure_Notification"
+    },
+
+    "S3_to_RDS_Glue": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::glue:startJobRun.sync",
+      "Parameters": {
+        "JobName": "s3-rds"
+      },
+      "End": true
+    },
+
+    "Send_Failure_Notification": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:us-east-1:117601052645:veera",
+        "Message": "The S3_to_S3 Glue job failed or did not succeed.",
+        "Subject": "Glue Job Failure Notification"
+      },
+      "End": true
+    }
+  }
+}
