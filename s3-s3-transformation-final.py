@@ -22,7 +22,7 @@ job.init(args['JOB_NAME'], args)
 # -----------------------------
 # Input CSV
 # -----------------------------
-input_path = "s3://glue-gcp-1111111111/users/part-00000-a1157521-8514-4f28-898d-ec821c80c7ee-c000.csv"
+input_path = "s3://glue-gcp-1111111/raw-layer/gcp-s3.csv"
 
 df = glueContext.create_dynamic_frame.from_options(
     format_options={"quoteChar": "\"", "withHeader": True, "separator": ","},
@@ -48,7 +48,8 @@ mapped_df = ApplyMapping.apply(
         ("phone", "string", "phone", "string"),
         ("created_date", "string", "created_date", "string"),
         ("last_login", "string", "last_login", "string"),
-
+        ("created_at", "string", "created_at", "string"),
+        ("last_modified", "string", "last_modified", "string")
     ],
     transformation_ctx="ChangeSchema_node"
 )
@@ -96,7 +97,7 @@ df_spark = df_spark.withColumnRenamed("email", "Email")
 df_spark = df_spark.dropDuplicates()
 
 # 4. Filter invalid data
-df_spark = df_spark.filter(col("id").isNotNull() & col("user_name").isNotNull())
+# df_spark = df_spark.filter(col("id").isNotNull() & col("user_name").isNotNull())
 
 # Convert back to DynamicFrame for Glue sink
 final_df = DynamicFrame.fromDF(df_spark, glueContext, "final_df")
@@ -104,7 +105,7 @@ final_df = DynamicFrame.fromDF(df_spark, glueContext, "final_df")
 # -----------------------------
 # Write CSV to S3 with custom filename
 # -----------------------------
-output_bucket = "glue-gcp-1111111111"
+output_bucket = "glue-gcp-1111111"
 output_prefix_temp = "transformation/"  # temporary folder
 output_file_name = "custom_users.csv"
 
